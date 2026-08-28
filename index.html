@@ -67,10 +67,6 @@ header.topbar h1 span{color:var(--accent);}
 .icon-btn:active{background:var(--surface2);}
 
 /* Login */
-.login-wrap{display:flex; align-items:center; justify-content:center; min-height:90vh; padding:20px;}
-.login-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 24px; width:100%; max-width:360px;}
-.login-card h1{font-size:26px; margin-bottom:4px;}
-.login-card p{color:var(--muted); font-size:13px; margin:0 0 20px;}
 
 /* Form elements */
 label{display:block; font-size:12px; color:var(--muted); margin:14px 0 5px; text-transform:uppercase; letter-spacing:0.04em;}
@@ -155,24 +151,10 @@ table.compare td.label{font-family:'Inter'; color:var(--muted); background:var(-
 </head>
 <body>
 
-<div id="login-view" class="login-wrap hide">
-  <div class="login-card">
-    <h1>Druck<span style="color:var(--accent)">daten</span></h1>
-    <p>Großformat 3D-Druck mit Robotern — Parameterdatenbank</p>
-    <label>E-Mail</label>
-    <input type="email" id="login-email" autocomplete="username">
-    <label>Passwort</label>
-    <input type="password" id="login-pass" autocomplete="current-password">
-    <button class="btn" id="login-btn">Anmelden</button>
-    <div class="error hide" id="login-error"></div>
-  </div>
-</div>
-
-<div id="app-view" class="hide">
+<div id="app-view">
   <header class="topbar">
     <h1>Druck<span>daten</span></h1>
     <div class="header-actions">
-      <button class="icon-btn" id="logout-btn">Abmelden</button>
       <button class="hamburger" id="menu-btn"><span></span><span></span><span></span></button>
     </div>
   </header>
@@ -326,24 +308,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let state = { materialien: [], roboter: [], duesen: [], versuche: [], dateien: {}, selected: new Set() };
 
-// ---------- AUTH ----------
-async function checkSession(){
-  const { data:{ session } } = await sb.auth.getSession();
-  if(session){ showApp(); loadAll(); } else { showLogin(); }
-}
-function showLogin(){ document.getElementById('login-view').classList.remove('hide'); document.getElementById('app-view').classList.add('hide'); }
-function showApp(){ document.getElementById('login-view').classList.add('hide'); document.getElementById('app-view').classList.remove('hide'); }
-
-document.getElementById('login-btn').onclick = async () => {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
-  errEl.classList.add('hide');
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){ errEl.textContent = error.message; errEl.classList.remove('hide'); return; }
-  showApp(); loadAll();
-};
-document.getElementById('logout-btn').onclick = async () => { await sb.auth.signOut(); showLogin(); };
+// ---------- INIT ----------
+showApp(); loadAll();
 
 // ---------- MENU ----------
 const menuBtn = document.getElementById('menu-btn');
@@ -441,7 +407,6 @@ document.querySelectorAll('[data-quickadd]').forEach(btn=>{
 document.getElementById('save-versuch-btn').onclick = async () => {
   const errEl = document.getElementById('save-error');
   errEl.classList.add('hide');
-  const { data:{ user } } = await sb.auth.getUser();
 
   const payload = {
     material_id: val('f-material') || null,
@@ -456,8 +421,7 @@ document.getElementById('save-versuch-btn').onclick = async () => {
     hoehenabstand: numOrNull('f-hoehe'),
     umgebung: val('f-umgebung') || null,
     heizbett_temperatur: numOrNull('f-heizbett'),
-    notizen: val('f-notizen') || null,
-    created_by: user ? user.id : null
+    notizen: val('f-notizen') || null
   };
 
   const { data: versuch, error } = await sb.from('versuche').insert(payload).select().single();
@@ -656,7 +620,7 @@ document.getElementById('compare-btn').onclick = () => {
   document.getElementById('compare-result').innerHTML = html;
 };
 
-checkSession();
+
 </script>
 </body>
 </html>
