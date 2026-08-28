@@ -1,0 +1,17 @@
+name: FTP List
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ftp-list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List FTP root and druckdaten dirs
+        run: |
+          echo "--- ROOT ---"
+          curl -s -u "robsimul@cnc-technik.de:${{ secrets.FTP_PASS_ROBSIMUL }}" ftp://ftp.fastmill.biz/
+          echo "--- /druckdaten/ ---"
+          curl -s -u "robsimul@cnc-technik.de:${{ secrets.FTP_PASS_ROBSIMUL }}" ftp://ftp.fastmill.biz/druckdaten/ || echo "not found"
+          echo "--- /public_html/ ---"
+          curl -s -u "robsimul@cnc-technik.de:${{ secrets.FTP_PASS_ROBSIMUL }}" ftp://ftp.fastmill.biz/public_html/ || echo "not found"
