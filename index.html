@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Druckdaten — Großformat 3D-Druck</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#14161a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#14161a; --surface:#1c1f26; --surface2:#22262e; --border:#2c3038;
+  --text:#e8e6e1; --muted:#8b8f98; --accent:#ff6a13; --accent-dim:#7a3a13;
+  --good:#4caf7d; --warn:#e0b23c; --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh; -webkit-font-smoothing:antialiased;
+  padding-bottom:70px;
+}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:0.03em; margin:0;}
+.mono{font-family:'JetBrains Mono',monospace;}
+#app{max-width:640px; margin:0 auto; padding:16px;}
+.hide{display:none !important;}
+
+/* Header */
+header.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:var(--bg); z-index:10;
+}
+header.topbar h1{font-size:20px; color:var(--text);}
+header.topbar h1 span{color:var(--accent);}
+.icon-btn{background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:6px 10px; font-size:13px; font-family:'Inter'; cursor:pointer;}
+.icon-btn:active{background:var(--surface2);}
+
+/* Login */
+.login-wrap{display:flex; align-items:center; justify-content:center; min-height:90vh; padding:20px;}
+.login-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 24px; width:100%; max-width:360px;}
+.login-card h1{font-size:26px; margin-bottom:4px;}
+.login-card p{color:var(--muted); font-size:13px; margin:0 0 20px;}
+
+/* Form elements */
+label{display:block; font-size:12px; color:var(--muted); margin:14px 0 5px; text-transform:uppercase; letter-spacing:0.04em;}
+input[type=text], input[type=email], input[type=password], input[type=number], select, textarea{
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:11px 12px; font-size:15px; font-family:'JetBrains Mono',monospace;
+}
+select{font-family:'Inter';}
+textarea{font-family:'Inter'; min-height:60px; resize:vertical;}
+input:focus, select:focus, textarea:focus{outline:2px solid var(--accent); outline-offset:1px;}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  background:var(--accent); color:#181207; border:none; border-radius:8px;
+  padding:12px 18px; font-weight:600; font-size:15px; cursor:pointer; width:100%; margin-top:18px;
+  font-family:'Inter';
+}
+.btn:active{opacity:0.85;}
+.btn.secondary{background:var(--surface2); color:var(--text); border:1px solid var(--border);}
+.btn.small{width:auto; padding:8px 12px; font-size:13px; margin-top:0;}
+.error{color:#ff8a6a; font-size:13px; margin-top:10px;}
+.hint{color:var(--muted); font-size:12px; margin-top:4px;}
+
+/* Tabs */
+nav.tabs{
+  position:fixed; bottom:0; left:0; right:0; background:var(--surface);
+  border-top:1px solid var(--border); display:flex; z-index:10;
+}
+nav.tabs button{
+  flex:1; background:none; border:none; color:var(--muted); padding:12px 4px 10px;
+  font-family:'Inter'; font-size:11px; text-transform:uppercase; letter-spacing:0.03em; cursor:pointer;
+}
+nav.tabs button.active{color:var(--accent);}
+
+/* Cards */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px;}
+.card h3{font-size:17px; margin-bottom:2px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+.field-inline{display:flex; gap:6px; align-items:flex-end;}
+.field-inline select{flex:1;}
+
+/* Readout chips for parameters */
+.readout{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.chip{background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:6px 9px; font-size:12px;}
+.chip .k{color:var(--muted); margin-right:5px;}
+.chip .v{font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700;}
+
+/* Versuch list */
+.versuch-item{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:10px; position:relative;}
+.versuch-item.selected{border-color:var(--accent);}
+.versuch-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+.versuch-head h3{font-size:16px;}
+.versuch-head .date{color:var(--muted); font-size:11px; font-family:'JetBrains Mono',monospace;}
+.check{width:20px; height:20px; border:1px solid var(--border); border-radius:5px; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+.check.on{background:var(--accent); border-color:var(--accent); color:#181207; font-weight:700;}
+
+/* Filter bar */
+.filters{display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:6px;}
+.filters select{width:auto; min-width:120px; font-family:'Inter'; font-size:13px; padding:8px 10px;}
+
+/* Compare table */
+.compare-scroll{overflow-x:auto; margin-top:10px;}
+table.compare{border-collapse:collapse; width:100%; font-size:12px;}
+table.compare th, table.compare td{border:1px solid var(--border); padding:6px 8px; text-align:left; white-space:nowrap;}
+table.compare th{background:var(--surface2); color:var(--muted); text-transform:uppercase; font-size:10px; letter-spacing:0.03em; font-family:'Inter';}
+table.compare td{font-family:'JetBrains Mono',monospace;}
+table.compare td.label{font-family:'Inter'; color:var(--muted); background:var(--surface2);}
+
+/* File thumbs */
+.file-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+.file-thumb{width:64px; height:64px; border-radius:6px; border:1px solid var(--border); overflow:hidden; position:relative; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--muted); text-align:center;}
+.file-thumb img{width:100%; height:100%; object-fit:cover;}
+.file-thumb .tag{position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); font-size:8px; text-align:center; padding:1px;}
+
+.divider{height:1px; background:var(--border); margin:16px 0;}
+.section-title{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+.empty{color:var(--muted); font-size:13px; text-align:center; padding:30px 10px;}
+.badge{display:inline-block; background:var(--surface2); color:var(--muted); font-size:10px; padding:2px 7px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em;}
+.badge.offen{color:var(--good);}
+.badge.geschlossen{color:var(--warn);}
+</style>
+</head>
+<body>
+
+<div id="login-view" class="login-wrap hide">
+  <div class="login-card">
+    <h1>Druck<span style="color:var(--accent)">daten</span></h1>
+    <p>Großformat 3D-Druck mit Robotern — Parameterdatenbank</p>
+    <label>E-Mail</label>
+    <input type="email" id="login-email" autocomplete="username">
+    <label>Passwort</label>
+    <input type="password" id="login-pass" autocomplete="current-password">
+    <button class="btn" id="login-btn">Anmelden</button>
+    <div class="error hide" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app-view" class="hide">
+  <header class="topbar">
+    <h1>Druck<span>daten</span></h1>
+    <button class="icon-btn" id="logout-btn">Abmelden</button>
+  </header>
+  <div id="app">
+
+    <!-- NEUER VERSUCH -->
+    <section id="tab-neu">
+      <h2 style="font-size:18px; margin-bottom:12px;">Neuer Versuch</h2>
+      <div class="card">
+        <div class="section-title">Stammdaten</div>
+        <label>Material</label>
+        <div class="field-inline">
+          <select id="f-material"></select>
+          <button class="btn small secondary" data-quickadd="material">+ Neu</button>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Roboter</label>
+            <div class="field-inline">
+              <select id="f-roboter"></select>
+              <button class="btn small secondary" data-quickadd="roboter">+</button>
+            </div>
+          </div>
+          <div>
+            <label>Düse</label>
+            <div class="field-inline">
+              <select id="f-duese"></select>
+              <button class="btn small secondary" data-quickadd="duese">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-title">Prozessparameter</div>
+        <div class="row2">
+          <div><label>Flow (%)</label><input type="number" step="any" id="f-flow"></div>
+          <div><label>Extruderfeed</label><input type="number" step="any" id="f-extruderfeed"></div>
+        </div>
+        <div class="row2">
+          <div><label>Roboterfeed</label><input type="number" step="any" id="f-roboterfeed"></div>
+          <div><label>Temperatur (°C)</label><input type="number" step="any" id="f-temperatur"></div>
+        </div>
+        <div class="row2">
+          <div><label>Verschleifung</label><input type="number" step="any" id="f-verschleifung"></div>
+          <div><label>Heizbett (°C)</label><input type="number" step="any" id="f-heizbett"></div>
+        </div>
+        <div class="row2">
+          <div><label>Seitl. Abstand</label><input type="number" step="any" id="f-seitlich"></div>
+          <div><label>Höhenabstand</label><input type="number" step="any" id="f-hoehe"></div>
+        </div>
+        <label>Umgebung</label>
+        <select id="f-umgebung">
+          <option value="">— wählen —</option>
+          <option value="offen">Offener Raum</option>
+          <option value="geschlossen">Geschlossener Raum</option>
+        </select>
+
+        <div class="divider"></div>
+        <div class="section-title">Notizen</div>
+        <textarea id="f-notizen" placeholder="Beobachtungen, Auffälligkeiten..."></textarea>
+
+        <div class="divider"></div>
+        <div class="section-title">Dateien</div>
+        <label>Bild + zugehöriges ASCII-Programm (Paar)</label>
+        <div class="row2">
+          <div><input type="file" id="f-bild" accept="image/*"></div>
+          <div><input type="file" id="f-programm" accept=".txt,.src,.dat,.krl,.gcode,.nc,*"></div>
+        </div>
+        <label>Weitere Dokumente / Bilder</label>
+        <input type="file" id="f-weitere" multiple>
+
+        <button class="btn" id="save-versuch-btn">Versuch speichern</button>
+        <div class="error hide" id="save-error"></div>
+      </div>
+    </section>
+
+    <!-- VERSUCHE / VERGLEICH -->
+    <section id="tab-liste" class="hide">
+      <h2 style="font-size:18px; margin-bottom:12px;">Versuche</h2>
+      <div class="filters">
+        <select id="filter-material"><option value="">Alle Materialien</option></select>
+        <select id="filter-roboter"><option value="">Alle Roboter</option></select>
+        <select id="filter-umgebung">
+          <option value="">Alle Umgebungen</option>
+          <option value="offen">Offen</option>
+          <option value="geschlossen">Geschlossen</option>
+        </select>
+      </div>
+      <div id="compare-bar" class="hide" style="margin-bottom:10px;">
+        <button class="btn small" id="compare-btn" style="width:100%;">Ausgewählte vergleichen (<span id="compare-count">0</span>)</button>
+      </div>
+      <div id="versuch-list"></div>
+      <div id="compare-result"></div>
+    </section>
+
+    <!-- STAMMDATEN -->
+    <section id="tab-stamm" class="hide">
+      <h2 style="font-size:18px; margin-bottom:12px;">Stammdaten</h2>
+
+      <div class="card">
+        <h3>Materialien</h3>
+        <div id="list-materialien"></div>
+        <div class="divider"></div>
+        <label>Name</label><input type="text" id="m-name">
+        <div class="row2">
+          <div><label>Lieferant</label><input type="text" id="m-lieferant"></div>
+          <div><label>Materialtyp</label><input type="text" id="m-typ" placeholder="PETG, PLA, PA6 ..."></div>
+        </div>
+        <label>Trocknungszeit</label><input type="text" id="m-trocknung" placeholder="z.B. 4h @ 60°C">
+        <label>Eigenschaften</label><textarea id="m-eigenschaften"></textarea>
+        <button class="btn" id="add-material-btn">Material hinzufügen</button>
+      </div>
+
+      <div class="card">
+        <h3>Roboter</h3>
+        <div id="list-roboter"></div>
+        <div class="divider"></div>
+        <div class="field-inline">
+          <input type="text" id="r-name" placeholder="Bezeichnung">
+          <button class="btn small" id="add-roboter-btn">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Düsen</h3>
+        <div id="list-duesen"></div>
+        <div class="divider"></div>
+        <div class="field-inline">
+          <input type="text" id="d-name" placeholder="Bezeichnung / Größe">
+          <button class="btn small" id="add-duese-btn">+</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="neu" class="active">Neuer Versuch</button>
+    <button data-tab="liste">Versuche</button>
+    <button data-tab="stamm">Stammdaten</button>
+  </nav>
+</div>
+
+<script>
+const SUPABASE_URL = "https://xpxsckylmxcwskjvfnjw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BIGYpnzI5ql8_SKj3YqEcg_5IdCq2Sb";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let state = { materialien: [], roboter: [], duesen: [], versuche: [], dateien: {}, selected: new Set() };
+
+// ---------- AUTH ----------
+async function checkSession(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ showApp(); loadAll(); } else { showLogin(); }
+}
+function showLogin(){ document.getElementById('login-view').classList.remove('hide'); document.getElementById('app-view').classList.add('hide'); }
+function showApp(){ document.getElementById('login-view').classList.add('hide'); document.getElementById('app-view').classList.remove('hide'); }
+
+document.getElementById('login-btn').onclick = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.add('hide');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ errEl.textContent = error.message; errEl.classList.remove('hide'); return; }
+  showApp(); loadAll();
+};
+document.getElementById('logout-btn').onclick = async () => { await sb.auth.signOut(); showLogin(); };
+
+// ---------- TABS ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['neu','liste','stamm'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hide', t !== btn.dataset.tab);
+    });
+  };
+});
+
+// ---------- LOAD ----------
+async function loadAll(){
+  await Promise.all([loadMaterialien(), loadRoboter(), loadDuesen()]);
+  await loadVersuche();
+}
+
+async function loadMaterialien(){
+  const { data } = await sb.from('materialien').select('*').order('name');
+  state.materialien = data || [];
+  fillSelect('f-material', state.materialien, 'Material wählen');
+  fillSelect('filter-material', state.materialien, 'Alle Materialien', true);
+  renderStammListe('list-materialien', state.materialien, m => `${m.name}${m.materialtyp? ' · '+m.materialtyp:''}${m.lieferant? ' · '+m.lieferant:''}`, 'materialien');
+}
+async function loadRoboter(){
+  const { data } = await sb.from('roboter').select('*').order('name');
+  state.roboter = data || [];
+  fillSelect('f-roboter', state.roboter, 'Roboter wählen');
+  fillSelect('filter-roboter', state.roboter, 'Alle Roboter', true);
+  renderStammListe('list-roboter', state.roboter, r => r.name, 'roboter');
+}
+async function loadDuesen(){
+  const { data } = await sb.from('duesen').select('*').order('bezeichnung');
+  state.duesen = data || [];
+  fillSelect('f-duese', state.duesen, 'Düse wählen', false, 'bezeichnung');
+  renderStammListe('list-duesen', state.duesen, d => d.bezeichnung, 'duesen');
+}
+function fillSelect(id, items, placeholder, withAll, labelKey){
+  const el = document.getElementById(id);
+  const keep = el.value;
+  el.innerHTML = `<option value="">${placeholder}</option>` + items.map(i=>`<option value="${i.id}">${i[labelKey||'name']}</option>`).join('');
+  el.value = keep;
+}
+function renderStammListe(id, items, labelFn, table){
+  const el = document.getElementById(id);
+  if(!items.length){ el.innerHTML = '<div class="empty">Noch nichts angelegt.</div>'; return; }
+  el.innerHTML = items.map(i=>`<div class="chip" style="display:block; margin-bottom:6px;">${labelFn(i)}</div>`).join('');
+}
+
+document.getElementById('add-material-btn').onclick = async () => {
+  const name = document.getElementById('m-name').value.trim();
+  if(!name) return;
+  await sb.from('materialien').insert({
+    name,
+    lieferant: document.getElementById('m-lieferant').value.trim() || null,
+    materialtyp: document.getElementById('m-typ').value.trim() || null,
+    trocknungszeit: document.getElementById('m-trocknung').value.trim() || null,
+    eigenschaften: document.getElementById('m-eigenschaften').value.trim() || null
+  });
+  ['m-name','m-lieferant','m-typ','m-trocknung','m-eigenschaften'].forEach(id=>document.getElementById(id).value='');
+  loadMaterialien();
+};
+document.getElementById('add-roboter-btn').onclick = async () => {
+  const name = document.getElementById('r-name').value.trim();
+  if(!name) return;
+  await sb.from('roboter').insert({ name });
+  document.getElementById('r-name').value='';
+  loadRoboter();
+};
+document.getElementById('add-duese-btn').onclick = async () => {
+  const bezeichnung = document.getElementById('d-name').value.trim();
+  if(!bezeichnung) return;
+  await sb.from('duesen').insert({ bezeichnung });
+  document.getElementById('d-name').value='';
+  loadDuesen();
+};
+
+document.querySelectorAll('[data-quickadd]').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelector('[data-tab="stamm"]').classList.add('active');
+    ['neu','liste','stamm'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hide', t!=='stamm'));
+    window.scrollTo(0,0);
+  };
+});
+
+// ---------- SAVE VERSUCH ----------
+document.getElementById('save-versuch-btn').onclick = async () => {
+  const errEl = document.getElementById('save-error');
+  errEl.classList.add('hide');
+  const { data:{ user } } = await sb.auth.getUser();
+
+  const payload = {
+    material_id: val('f-material') || null,
+    roboter_id: val('f-roboter') || null,
+    duese_id: val('f-duese') || null,
+    flow: numOrNull('f-flow'),
+    extruderfeed: numOrNull('f-extruderfeed'),
+    roboterfeed: numOrNull('f-roboterfeed'),
+    temperatur: numOrNull('f-temperatur'),
+    verschleifung: numOrNull('f-verschleifung'),
+    seitlicher_abstand: numOrNull('f-seitlich'),
+    hoehenabstand: numOrNull('f-hoehe'),
+    umgebung: val('f-umgebung') || null,
+    heizbett_temperatur: numOrNull('f-heizbett'),
+    notizen: val('f-notizen') || null,
+    created_by: user ? user.id : null
+  };
+
+  const { data: versuch, error } = await sb.from('versuche').insert(payload).select().single();
+  if(error){ errEl.textContent = error.message; errEl.classList.remove('hide'); return; }
+
+  // Dateien hochladen
+  const pairId = crypto.randomUUID();
+  const bildFile = document.getElementById('f-bild').files[0];
+  const progFile = document.getElementById('f-programm').files[0];
+  const weitereFiles = document.getElementById('f-weitere').files;
+
+  if(bildFile) await uploadDatei(versuch.id, bildFile, 'bild', pairId);
+  if(progFile) await uploadDatei(versuch.id, progFile, 'ascii_programm', pairId);
+  for(const f of weitereFiles) await uploadDatei(versuch.id, f, 'dokument', null);
+
+  // Formular zurücksetzen
+  ['f-flow','f-extruderfeed','f-roboterfeed','f-temperatur','f-verschleifung','f-heizbett','f-seitlich','f-hoehe','f-notizen'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-umgebung').value='';
+  document.getElementById('f-bild').value=''; document.getElementById('f-programm').value=''; document.getElementById('f-weitere').value='';
+
+  loadVersuche();
+  document.querySelector('[data-tab="liste"]').click();
+};
+
+async function uploadDatei(versuchId, file, typ, pairId){
+  const path = `${versuchId}/${Date.now()}_${file.name}`;
+  const { error: upErr } = await sb.storage.from('druckversuche').upload(path, file);
+  if(upErr){ console.error(upErr); return; }
+  await sb.from('dateien').insert({ versuch_id: versuchId, typ, storage_path: path, dateiname: file.name, paar_id: pairId });
+}
+
+function val(id){ return document.getElementById(id).value; }
+function numOrNull(id){ const v = document.getElementById(id).value; return v === '' ? null : Number(v); }
+
+// ---------- VERSUCHE LISTE ----------
+async function loadVersuche(){
+  const { data } = await sb.from('versuche').select('*').order('created_at', { ascending:false });
+  state.versuche = data || [];
+  await loadDateienFor(state.versuche.map(v=>v.id));
+  renderVersucheListe();
+}
+
+async function loadDateienFor(ids){
+  if(!ids.length){ state.dateien = {}; return; }
+  const { data } = await sb.from('dateien').select('*').in('versuch_id', ids);
+  state.dateien = {};
+  (data||[]).forEach(d=>{
+    if(!state.dateien[d.versuch_id]) state.dateien[d.versuch_id] = [];
+    state.dateien[d.versuch_id].push(d);
+  });
+}
+
+function matName(id){ return state.materialien.find(m=>m.id===id)?.name || '—'; }
+function robName(id){ return state.roboter.find(r=>r.id===id)?.name || '—'; }
+function duesName(id){ return state.duesen.find(d=>d.id===id)?.bezeichnung || '—'; }
+
+function filteredVersuche(){
+  const fm = document.getElementById('filter-material').value;
+  const fr = document.getElementById('filter-roboter').value;
+  const fu = document.getElementById('filter-umgebung').value;
+  return state.versuche.filter(v =>
+    (!fm || v.material_id === fm) &&
+    (!fr || v.roboter_id === fr) &&
+    (!fu || v.umgebung === fu)
+  );
+}
+
+['filter-material','filter-roboter','filter-umgebung'].forEach(id=>{
+  document.getElementById(id).onchange = renderVersucheListe;
+});
+
+function renderVersucheListe(){
+  const list = document.getElementById('versuch-list');
+  const items = filteredVersuche();
+  if(!items.length){ list.innerHTML = '<div class="empty">Keine Versuche gefunden.</div>'; updateCompareBar(); return; }
+
+  list.innerHTML = items.map(v=>{
+    const d = new Date(v.created_at);
+    const dateStr = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    const files = state.dateien[v.id] || [];
+    const isSel = state.selected.has(v.id);
+    return `
+    <div class="versuch-item ${isSel?'selected':''}" data-id="${v.id}">
+      <div class="versuch-head">
+        <div>
+          <h3>${matName(v.material_id)} <span class="badge ${v.umgebung||''}">${v.umgebung||'—'}</span></h3>
+          <div class="date">${dateStr} · ${robName(v.roboter_id)} · ${duesName(v.duese_id)}</div>
+        </div>
+        <div class="check ${isSel?'on':''}" data-select="${v.id}">${isSel?'✓':''}</div>
+      </div>
+      <div class="readout">
+        ${chip('Flow', v.flow)}${chip('Extr.feed', v.extruderfeed)}${chip('Rob.feed', v.roboterfeed)}
+        ${chip('Temp', v.temperatur, '°C')}${chip('Verschl.', v.verschleifung)}${chip('Heizbett', v.heizbett_temperatur, '°C')}
+        ${chip('Seitl.', v.seitlicher_abstand)}${chip('Höhe', v.hoehenabstand)}
+      </div>
+      ${v.notizen ? `<div class="hint" style="margin-top:8px;">${escapeHtml(v.notizen)}</div>` : ''}
+      ${files.length ? `<div class="file-list">${files.map(f=>fileThumb(f)).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-select]').forEach(el=>{
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = el.dataset.select;
+      if(state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+      renderVersucheListe();
+    };
+  });
+  updateCompareBar();
+}
+
+function chip(label, value, unit){
+  if(value === null || value === undefined) return '';
+  return `<div class="chip"><span class="k">${label}</span><span class="v">${value}${unit||''}</span></div>`;
+}
+
+async function fileThumbUrl(path){
+  const { data } = await sb.storage.from('druckversuche').createSignedUrl(path, 3600);
+  return data ? data.signedUrl : '';
+}
+function fileThumb(f){
+  const label = f.typ === 'bild' ? 'Bild' : f.typ === 'ascii_programm' ? 'Programm' : 'Dok.';
+  return `<div class="file-thumb" data-path="${f.storage_path}" data-typ="${f.typ}">${f.typ==='bild'?'<span class="thumb-loading">…</span>':'📄'}<div class="tag">${label}</div></div>`;
+}
+
+// Signierte Bild-URLs asynchron nachladen
+const observer = new MutationObserver(async ()=>{
+  document.querySelectorAll('.file-thumb[data-typ="bild"] .thumb-loading').forEach(async el=>{
+    const wrap = el.closest('.file-thumb');
+    const path = wrap.dataset.path;
+    const url = await fileThumbUrl(path);
+    if(url){ wrap.innerHTML = `<img src="${url}"><div class="tag">Bild</div>`; }
+  });
+});
+observer.observe(document.getElementById('versuch-list'), { childList:true, subtree:true });
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function updateCompareBar(){
+  const bar = document.getElementById('compare-bar');
+  document.getElementById('compare-count').textContent = state.selected.size;
+  bar.classList.toggle('hide', state.selected.size < 2);
+}
+
+document.getElementById('compare-btn').onclick = () => {
+  const items = state.versuche.filter(v=>state.selected.has(v.id));
+  const rows = [
+    ['Material', v=>matName(v.material_id)],
+    ['Roboter', v=>robName(v.roboter_id)],
+    ['Düse', v=>duesName(v.duese_id)],
+    ['Flow', v=>v.flow],
+    ['Extruderfeed', v=>v.extruderfeed],
+    ['Roboterfeed', v=>v.roboterfeed],
+    ['Temperatur', v=>v.temperatur],
+    ['Verschleifung', v=>v.verschleifung],
+    ['Seitl. Abstand', v=>v.seitlicher_abstand],
+    ['Höhenabstand', v=>v.hoehenabstand],
+    ['Umgebung', v=>v.umgebung],
+    ['Heizbett', v=>v.heizbett_temperatur],
+  ];
+  const html = `
+    <div class="card">
+      <h3>Vergleich (${items.length})</h3>
+      <div class="compare-scroll">
+        <table class="compare">
+          <thead><tr><th></th>${items.map((v,i)=>`<th>#${i+1}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map(([label,fn])=>`<tr><td class="label">${label}</td>${items.map(v=>`<td>${fn(v) ?? '—'}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  document.getElementById('compare-result').innerHTML = html;
+};
+
+checkSession();
+</script>
+</body>
+</html>
