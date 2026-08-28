@@ -76,6 +76,14 @@ input[type=text], input[type=email], input[type=password], input[type=number], s
 }
 select{font-family:'Inter';}
 textarea{font-family:'Inter'; min-height:60px; resize:vertical;}
+input[type=file]{
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--muted);
+  border-radius:8px; padding:9px 10px; font-size:12px; font-family:'Inter';
+}
+input[type=file]::file-selector-button{
+  background:var(--surface); color:var(--text); border:1px solid var(--border);
+  border-radius:6px; padding:6px 10px; font-size:12px; font-family:'Inter'; margin-right:8px; cursor:pointer;
+}
 input:focus, select:focus, textarea:focus{outline:2px solid var(--accent); outline-offset:1px;}
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -309,7 +317,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let state = { materialien: [], roboter: [], duesen: [], versuche: [], dateien: {}, selected: new Set() };
 
 // ---------- INIT ----------
-showApp(); loadAll();
+loadAll();
 
 // ---------- MENU ----------
 const menuBtn = document.getElementById('menu-btn');
