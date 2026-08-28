@@ -310,16 +310,7 @@ table.compare td.label{font-family:'Inter'; color:var(--muted); background:var(-
 </div>
 
 <script>
-const SUPABASE_URL = "https://xpxsckylmxcwskjvfnjw.supabase.co";
-const SUPABASE_KEY = "sb_publishable_BIGYpnzI5ql8_SKj3YqEcg_5IdCq2Sb";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let state = { materialien: [], roboter: [], duesen: [], versuche: [], dateien: {}, selected: new Set() };
-
-// ---------- INIT ----------
-loadAll();
-
-// ---------- MENU ----------
+// ---------- MENU (unabhängig von Supabase, läuft immer) ----------
 const menuBtn = document.getElementById('menu-btn');
 const menuOverlay = document.getElementById('menu-overlay');
 const menuPanel = document.getElementById('menu-panel');
@@ -340,6 +331,21 @@ function switchTab(tab){
 document.querySelectorAll('.menu-item').forEach(btn=>{
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
+
+// ---------- SUPABASE ----------
+const SUPABASE_URL = "https://xpxsckylmxcwskjvfnjw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BIGYpnzI5ql8_SKj3YqEcg_5IdCq2Sb";
+let sb;
+try{
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e){
+  console.error('Supabase konnte nicht geladen werden:', e);
+}
+
+let state = { materialien: [], roboter: [], duesen: [], versuche: [], dateien: {}, selected: new Set() };
+
+// ---------- INIT ----------
+if(sb) loadAll();
 
 // ---------- LOAD ----------
 async function loadAll(){
