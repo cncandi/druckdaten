@@ -1,0 +1,31 @@
+name: FTP Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      local_path:
+        description: 'Lokaler Pfad im Repo'
+        required: true
+        default: '.'
+      remote_path:
+        description: 'Zielpfad auf FTP'
+        required: true
+        default: '/public_html/druckdaten/'
+
+jobs:
+  ftp-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Upload
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftp.fastmill.biz
+          username: robsimul@cnc-technik.de
+          password: ${{ secrets.FTP_PASS_ROBSIMUL }}
+          local-dir: ${{ github.event.inputs.local_path }}/
+          server-dir: ${{ github.event.inputs.remote_path }}/
+          exclude: |
+            **/.git*
+            **/.git*/**
